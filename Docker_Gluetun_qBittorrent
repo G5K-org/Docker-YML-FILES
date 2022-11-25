@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 8888:8888/tcp # HTTP proxy
+      - 8388:8388/tcp # Shadowsocks
+      - 8388:8388/udp # Shadowsocks
+      - 8090:8090 # port for qbittorrent
+    volumes:
+      - /volume1/docker/gluetun:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=oXX
+      - OPENVPN_PASSWORD=XXX
+      - SERVER_COUNTRIES=Netherlands
+      - TZ=Europe/Berlin
+    restart: unless-stopped
+
+  qbittorrent:
+    image: linuxserver/qbittorrent
+    container_name: qbittorrent
+    environment:
+      - PUID=998
+      - PGID=100
+      - TZ=Europe/Berlin
+      - WEBUI_PORT=8090
+    volumes:
+      - /home/docker/openvpn-qbit/config/directory:/config
+      - /srv/mergerfs/Merge_FS/Torrents:/downloads
+    network_mode: service:gluetun # run on the vpn network
+    depends_on:
+      - gluetun
+    restart: unless-stopped
